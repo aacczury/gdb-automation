@@ -1,19 +1,31 @@
 file main.elf
-target remote :3333
+target remote :6666
 set $osp = $sp
 set $sp = $sp - 16
-b main.c:4
+b main.c:5
 c
+
+# enable GPIOA AFIO USART2 clock
 call RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_AFIO, ENABLE)
 call RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE)
+
+# PD3 floating 輸入
 set ((GPIO_InitTypeDef*)$osp)->GPIO_Pin = GPIO_Pin_3
 set ((GPIO_InitTypeDef*)$osp)->GPIO_Mode = GPIO_Mode_IN_FLOATING
 call GPIO_Init(GPIOA, $osp)
+
+#PD2 AF_PP, 50M clock
+#PP: Push–pull output
+#AF_XX: If you configure a port bit as Alternate Function Output, this disconnects the output register and connects the pin to the output signal of an on-chip peripheral.
 set ((GPIO_InitTypeDef*)$osp)->GPIO_Pin = GPIO_Pin_2
 set ((GPIO_InitTypeDef*)$osp)->GPIO_Speed = GPIO_Speed_50MHz
 set ((GPIO_InitTypeDef*)$osp)->GPIO_Mode = GPIO_Mode_AF_PP
 call GPIO_Init(GPIOA, $osp)
+
 c
+
+#USART: Universal Synchronous Asynchronous Receiver / Transmitter  通用同步異步接收發送器
+# 9600 bps, 8 bit, 1 stop, Parity_No, 禁用RTSCTS硬體流控制, enable 發送接收
 set ((USART_InitTypeDef*)$osp)->USART_BaudRate = 9600
 set ((USART_InitTypeDef*)$osp)->USART_WordLength = USART_WordLength_8b
 set ((USART_InitTypeDef*)$osp)->USART_StopBits = USART_StopBits_1
@@ -22,10 +34,17 @@ set ((USART_InitTypeDef*)$osp)->USART_HardwareFlowControl = USART_HardwareFlowCo
 set ((USART_InitTypeDef*)$osp)->USART_Mode = USART_Mode_Rx | USART_Mode_Tx
 call USART_Init(USART2, $osp)
 call USART_Cmd(USART2, ENABLE)
+
 c
-call USART_SendData(USART2, 'H')
-call USART_SendData(USART2, 'e')
-call USART_SendData(USART2, 'l')
-call USART_SendData(USART2, 'l')
-call USART_SendData(USART2, 'o')
-call USART_SendData(USART2, '!')
+
+#call USART_SendData(USART2, 'H')
+#call USART_SendData(USART2, 'e')
+#call USART_SendData(USART2, 'l')
+#call USART_SendData(USART2, 'l')
+#call USART_SendData(USART2, 'o')
+#call USART_SendData(USART2, '!')
+
+while( *hello )
+call USART_SendData( USART2, *hello )
+set hello = hello + 1
+end
